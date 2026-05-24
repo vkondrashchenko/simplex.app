@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SYMPLEX — Simplex-lattice diagram renderer (Quarkus + Lambda)
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Environment:
+      Variables:
+        JAVA_TOOL_OPTIONS: "-Dfile.encoding=UTF-8"
+
+Resources:
+  SimplexFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      # Used by `sam build` to produce a local image for `sam local start-api`.
+      # DockerContext is relative to the directory where `sam` is invoked (deploy/).
+      # The Dockerfile expects the build context to be new.java.version/ (one level up).
+      DockerContext: ../
+      Dockerfile: deploy/Dockerfile
+      DockerTag: symplex-local
+    Properties:
+      PackageType: Image
+      # ImageUri is used for `sam deploy` only; ignored by `sam local` after `sam build`.
+      ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/symplex:latest"
+      Architectures:
+        - x86_64
+      Events:
+        ApiProxy:
+          Type: HttpApi
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+        ApiRoot:
+          Type: HttpApi
+          Properties:
+            Path: /
+            Method: ANY
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+  FunctionArn:
+    Description: Lambda function ARN
+    Value: !GetAtt SimplexFunction.Arn

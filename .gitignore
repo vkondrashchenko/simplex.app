@@ -1,0 +1,75 @@
+# IDE and Editor
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+.classpath
+.project
+.settings/
+*.classpath
+bin/
+out/
+
+# Frontend / Node.js
+node_modules/
+dist/
+build/
+.cache/
+.parcel-cache/
+.vite/
+
+# Environment and configuration
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS-specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Build outputs and caches
+.gradle/
+.npm/
+*.tsbuildinfo
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*.orig
+
+# Local development
+.vscode-test/
+.devcontainer/
+
+# SAM / CloudFormation
+.aws-sam/
+samconfig.toml.local

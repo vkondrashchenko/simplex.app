@@ -1,0 +1,24 @@
+version = 0.1
+
+# ---- Local development (sam local start-api) ----
+[default.local_start_api.parameters]
+warm_containers = "EAGER"
+docker_network = "host"
+port = 3000
+
+# ---- Default deploy profile (prod) ----
+[default.deploy.parameters]
+stack_name = "symplex"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+# Set image_repository to your ECR repo URI before deploying:
+# image_repository = "123456789012.dkr.ecr.us-east-1.amazonaws.com/symplex"
+
+# ---- Dev deploy profile ----
+[dev.deploy.parameters]
+stack_name = "symplex-dev"
+region = "us-east-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM"
+# image_repository = "123456789012.dkr.ecr.us-east-1.amazonaws.com/symplex"
