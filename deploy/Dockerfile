@@ -12,9 +12,8 @@ RUN mvn package -pl lambda -am -DskipTests -q
 
 # ---- Runtime stage ----
 FROM public.ecr.aws/lambda/java:21
-COPY --from=build /app/lambda/target/quarkus-app/lib/ ${LAMBDA_TASK_ROOT}/lib/
-COPY --from=build /app/lambda/target/quarkus-app/*.jar ${LAMBDA_TASK_ROOT}/
-COPY --from=build /app/lambda/target/quarkus-app/app/ ${LAMBDA_TASK_ROOT}/app/
-COPY --from=build /app/lambda/target/quarkus-app/quarkus/ ${LAMBDA_TASK_ROOT}/quarkus/
+COPY --from=build /app/lambda/target/function.zip /tmp/function.zip
+# jar is always present in Java images; function.zip is a standard zip
+RUN cd ${LAMBDA_TASK_ROOT} && jar xf /tmp/function.zip && rm /tmp/function.zip
 
 CMD ["io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest"]
