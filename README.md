@@ -1,6 +1,6 @@
 # SYMPLEX
 
-Web application for building simplex-lattice composition-property diagrams. Evaluates polynomial mixture models on a 2D equilateral-triangle simplex and renders the result as a PNG diagram.
+Web application for building simplex-lattice composition-property diagrams. Evaluates polynomial mixture models on a 2D equilateral-triangle simplex and renders the result as an SVG diagram.
 
 **Stack:** Quarkus 3.17 · Java 21 · AWS Lambda + API Gateway · React 18 · Vite 5 · AWS SAM
 
@@ -11,14 +11,16 @@ Web application for building simplex-lattice composition-property diagrams. Eval
 ```
 new.java.version/
 ├── backend/
-│   ├── pom.xml                 Maven parent (Java 21, Quarkus BOM 3.17.4)
-│   ├── core/                   Pure-Java library — parser, evaluator, renderer
-│   └── lambda/                 Quarkus Lambda HTTP handler
-├── frontend/                   React + Vite SPA
+│   ├── pom.xml                     Maven parent (Java 21, Quarkus BOM 3.17.4)
+│   ├── core/                       Pure-Java library — parser, evaluator, renderer
+│   └── lambda/                     Quarkus Lambda HTTP handler
+├── frontend/                       React + Vite SPA
 └── deploy/
-    ├── Dockerfile              Multi-stage image for ECR/Lambda
-    ├── template.yaml           AWS SAM template
-    └── samconfig.toml          SAM profiles (local + prod)
+    ├── Dockerfile                  Multi-stage image for ECR/Lambda
+    ├── template.yaml               AWS SAM template (arm64/Graviton2)
+    ├── samconfig.toml              SAM profiles (local + prod)
+    ├── deploy.sh                   Build + deploy wrapper (reads .env.deploy)
+    └── .env.deploy.example         Template for the gitignored .env.deploy file
 ```
 
 ---
@@ -135,7 +137,7 @@ Y=5.76*x1+7.20*x2+13.36*x3+68.16*x4-3.66*x1*x2+32.13*x1*x3+62.8*x1*x4+42.80*x2*x
 
 **Expected result:** the diagram shows 9 isolines (25, 30, 35, … 65) matching the reference figure in the PDF specification.
 
-You can also call the API directly and save the PNG (substitute port 8080 if using Option A, 3000 if using Option B):
+You can also call the API directly and save the SVG (substitute port 8080 if using Option A, 3000 if using Option B):
 
 ```bash
 curl -s -X POST http://localhost:8080/api/render \
@@ -148,15 +150,15 @@ curl -s -X POST http://localhost:8080/api/render \
     "precision": 1,
     "pixelStep": 1
   }' | python3 -c "
-import json, sys, base64
+import json, sys
 r = json.load(sys.stdin)
 print(f'min={r[\"min\"]:.4f}  max={r[\"max\"]:.4f}')
-open('/tmp/symplex.png','wb').write(base64.b64decode(r['imageBase64']))
-print('Saved /tmp/symplex.png')
+open('/tmp/symplex.svg', 'w').write(r['svgContent'])
+print('Saved /tmp/symplex.svg')
 "
 ```
 
-### 5 — Run the unit tests
+### Run the unit tests
 
 ```bash
 cd new.java.version/backend
@@ -190,7 +192,7 @@ Parses the equation and returns variable metadata. Use this to populate the vari
 
 ### `POST /api/render`
 
-Sweeps the simplex triangle, evaluates the polynomial at each pixel, and returns a 457×457 PNG encoded as Base64.
+Sweeps the simplex triangle, evaluates the polynomial at each pixel, and returns a 457×457 SVG diagram.
 
 **Request fields:**
 
@@ -202,7 +204,7 @@ Sweeps the simplex triangle, evaluates the polynomial at each pixel, and returns
 | `regionMin` / `regionMax` | double | Bounds for `REGION` mode |
 | `isoValue` | double | Target value for `ISOLINE_SINGLE` mode |
 | `isoFrom` / `isoTo` / `isoStep` | double | Range for `ISOLINE_RANGE` mode |
-| `precision` | int | Decimal digits for isoline matching (0–6) |
+| `precision` | int | Stroke width control (0–3): 0 = coarsest/thickest, 3 = finest/thinnest |
 | `pixelStep` | int | Sweep stride — 1 = every pixel (full res), 10 = fastest/coarsest |
 
 Exactly 3 variables must be left unfixed (free); they map to the three simplex axes.
@@ -210,7 +212,7 @@ Exactly 3 variables must be left unfixed (free); they map to the three simplex a
 **Response:**
 ```json
 {
-  "imageBase64": "<base64-encoded PNG>",
+  "svgContent": "<svg xmlns=...>...</svg>",
   "min": 5.76,
   "max": 68.16
 }
@@ -241,93 +243,151 @@ aws configure
 aws ecr create-repository --repository-name symplex --region us-east-1
 ```
 
-Note the `repositoryUri` from the output — you will use it in the following steps.
+Note the `repositoryUri` from the output — you will use it in the next step.
 
-#### 3 — Update `samconfig.toml`
+#### 3 — Create the Lambda execution role
 
-Open `deploy/samconfig.toml` and uncomment the `image_repository` line under `[default.deploy.parameters]`, replacing the placeholder with your actual ECR URI:
+The deploy user must not have `iam:CreateRole`. Create the role once from an admin identity, then the deploy user only needs `iam:PassRole` scoped to this role.
 
-```toml
-[default.deploy.parameters]
-image_repository = "123456789012.dkr.ecr.us-east-1.amazonaws.com/symplex"
+```bash
+# Create role with Lambda trust policy
+aws iam create-role \
+  --role-name symplex-lambda-role \
+  --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+# Attach basic execution policy (CloudWatch Logs write access)
+aws iam attach-role-policy \
+  --role-name symplex-lambda-role \
+  --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 ```
 
-### Deploy
+Then grant the deploy user permission to pass this role to Lambda:
 
-#### 1 — Authenticate Docker with ECR
+```bash
+aws iam put-user-policy \
+  --user-name <deploy-user> \
+  --policy-name symplex-pass-lambda-role \
+  --policy-document '{
+    "Version": "2012-10-17",
+    "Statement": [{
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::<account-id>:role/symplex-lambda-role",
+      "Condition": {"StringEquals": {"iam:PassedToService": "lambda.amazonaws.com"}}
+    }]
+  }'
+```
+
+#### 4 — Configure the deploy environment file
+
+Copy the example file and fill in your ECR repository URI:
+
+```bash
+cp deploy/.env.deploy.example deploy/.env.deploy
+# Edit deploy/.env.deploy and set IMAGE_REPOSITORY to your ECR URI
+```
+
+`.env.deploy` is gitignored and never committed.
+
+#### 5 — Authenticate Docker with ECR
 
 ```bash
 aws ecr get-login-password --region us-east-1 \
   | docker login --username AWS --password-stdin \
-    123456789012.dkr.ecr.us-east-1.amazonaws.com
+    <account-id>.dkr.ecr.us-east-1.amazonaws.com
 ```
 
-#### 2 — Build the Docker image
+### Deploy the backend
 
-Run this from the `new.java.version/` directory (Dockerfile COPY paths are relative to it):
-
-```bash
-cd new.java.version
-docker build -f deploy/Dockerfile -t symplex:latest .
-```
-
-The image is built in two stages: Maven compiles the Quarkus fast-jar in a `maven:3.9-eclipse-temurin-21` container, then the artifacts are copied into the AWS Lambda Java 21 base image. First build takes ~3 minutes; subsequent builds use Docker layer caching and finish in ~30 seconds.
-
-#### 3 — Push the image to ECR
-
-```bash
-docker tag symplex:latest \
-  123456789012.dkr.ecr.us-east-1.amazonaws.com/symplex:latest
-
-docker push 123456789012.dkr.ecr.us-east-1.amazonaws.com/symplex:latest
-```
-
-#### 4 — Deploy with SAM
+Run the deploy script from the repository root:
 
 ```bash
 cd new.java.version/deploy
-sam deploy
+./deploy.sh
 ```
 
-SAM will:
-- Create (or update) a CloudFormation stack named `symplex`
-- Create the Lambda function from the ECR image
-- Create an HTTP API Gateway with routes `ANY /{proxy+}` and `ANY /`
-- Print the public API URL in `Outputs`
+The script:
+1. Builds the Docker image using SAM (arm64/Graviton2, Docker legacy builder for Lambda-compatible manifests)
+2. Pushes to ECR
+3. Creates or updates the CloudFormation stack `symplex`
 
 On the first deploy you will be prompted to confirm the changeset — review it and type `y`.
 
-#### 5 — Note the API URL
-
-The deploy output includes:
+The deploy output includes the API URL:
 
 ```
 Outputs
 -------
-ApiUrl   https://abc123.execute-api.us-east-1.amazonaws.com
+ApiUrl   https://<id>.execute-api.us-east-1.amazonaws.com
 ```
 
-#### 6 — Build and host the frontend
+---
 
-Build the frontend pointing at the live API:
+### Deploy the frontend to AWS (Amplify)
+
+Amplify Hosting serves the built SPA over HTTPS from CloudFront edge nodes. The default URL is `https://main.<appid>.amplifyapp.com`.
+
+#### One-time setup
+
+##### 1 — Create the Amplify app and branch
 
 ```bash
-cd new.java.version/frontend
-VITE_API_URL=https://abc123.execute-api.us-east-1.amazonaws.com/api npm run build
+APP_ID=$(aws amplify create-app --name symplex --platform WEB \
+  --query 'app.appId' --output text)
+echo "AMPLIFY_APP_ID=$APP_ID"
+
+aws amplify create-branch --app-id "$APP_ID" --branch-name main
 ```
 
-The `dist/` directory contains a fully static site that can be served from any host — S3 + CloudFront, Netlify, Vercel, or any CDN. No server-side rendering is required.
+##### 2 — Configure SPA routing
+
+Amplify must rewrite unknown paths to `index.html` so React Router works on direct URL navigation:
+
+```bash
+aws amplify update-app --app-id "$APP_ID" \
+  --custom-rules '[{"source":"/<*>","target":"/index.html","status":"404-200"}]'
+```
+
+##### 3 — Add values to `.env.deploy`
+
+```
+AMPLIFY_APP_ID=<value printed in step 1>
+VITE_API_URL=https://<id>.execute-api.us-east-1.amazonaws.com/api
+```
+
+`VITE_API_URL` is the API Gateway URL from the backend deploy output. It is baked into the frontend bundle at build time.
+
+#### Deploy the frontend
+
+```bash
+cd new.java.version/deploy
+./deploy-frontend.sh
+```
+
+The script builds the frontend locally with `VITE_API_URL` set, packages `dist/`, uploads the artifact to Amplify, and starts the deployment. It prints the live URL and a status-check command when done.
+
+#### Frontend URL
+
+```
+https://main.<appid>.amplifyapp.com
+```
+
+**Custom domain:** run `aws amplify create-domain-association --app-id <appid> --domain-name example.com` or use the Amplify console — Amplify provisions the ACM certificate automatically.
+
+---
 
 ### Updating after code changes
 
-Rebuild and redeploy in three commands:
-
+**Backend:**
 ```bash
-# From new.java.version/
-docker build -f deploy/Dockerfile -t symplex:latest . && \
-docker push 123456789012.dkr.ecr.us-east-1.amazonaws.com/symplex:latest
+cd new.java.version/deploy
+./deploy.sh
+```
 
-cd deploy && sam deploy
+**Frontend:**
+```bash
+cd new.java.version/deploy
+./deploy-frontend.sh
 ```
 
 ### Teardown
@@ -339,10 +399,14 @@ cd new.java.version/deploy
 sam delete --stack-name symplex
 ```
 
-This deletes the Lambda function and API Gateway. The ECR repository and its images are **not** deleted automatically; remove them separately if needed:
+This deletes the Lambda function and API Gateway. The ECR repository, S3 bucket, and IAM role are **not** deleted automatically; remove them separately if needed:
 
 ```bash
 aws ecr delete-repository --repository-name symplex --force --region us-east-1
+aws amplify delete-app --app-id <amplify-app-id>
+aws iam detach-role-policy --role-name symplex-lambda-role \
+  --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+aws iam delete-role --role-name symplex-lambda-role
 ```
 
 ---
@@ -362,7 +426,7 @@ aws ecr delete-repository --repository-name symplex --force --region us-east-1
 
 | Variable | Default | Description |
 |---|---|---|
-| `VITE_API_URL` | `/api` | Backend base URL; set to the API Gateway URL for production builds |
+| `VITE_API_URL` | `/api` | Backend base URL used at **build time** for production; set to the API Gateway URL |
 | `VITE_BACKEND_URL` | `http://localhost:8080` | Vite dev-server proxy target; set to `http://localhost:3000` when using SAM Local |
 
 ### Lambda sizing (`deploy/template.yaml`)
@@ -371,27 +435,26 @@ aws ecr delete-repository --repository-name symplex --force --region us-east-1
 |---|---|---|
 | `MemorySize` | 512 MB | A full-resolution sweep (pixelStep=1) finishes in <200ms at this size |
 | `Timeout` | 30 s | Well above worst-case render time |
+| `Architectures` | arm64 | Graviton2 — ~20% cheaper than x86_64; builds natively on Apple Silicon |
+| `ReservedConcurrentExecutions` | 2 | Hard cap on simultaneous executions; excess requests receive HTTP 429 |
 
 Increase `MemorySize` to 1024 MB for faster cold starts at higher per-invocation cost.
 
----
+### API Gateway throttling (`deploy/template.yaml`)
 
-## Troubleshooting
+Default route throttle applied to all endpoints:
 
-**`sam local` error: "ECR image will not be built" or "no container runtime found"**  
-You must run `sam build` before `sam local start-api` — SAM cannot pull from ECR for local runs. Also make sure Docker Desktop (or Finch) is running (`docker ps` should succeed) before invoking SAM. If you do not need Lambda-environment parity, use `mvn quarkus:dev` instead (Option A above), which requires no Docker at all.
+| Setting | Value | Notes |
+|---|---|---|
+| `ThrottlingRateLimit` | 10 req/s | Steady-state maximum across all callers |
+| `ThrottlingBurstLimit` | 20 | Concurrent request spike limit; excess receives HTTP 429 |
 
-**`sam local start-api` exits immediately after `sam build`**  
-Make sure Docker is running and that you are in the `deploy/` directory when invoking SAM.
+### CORS (`backend/lambda/src/main/resources/application.properties`)
 
-**`JAVA_HOME` not set error when running Maven**  
-Set it explicitly: `export JAVA_HOME=$(/usr/libexec/java_home -v 21)` on macOS, or `export JAVA_HOME=/usr/lib/jvm/java-21` on Linux.
+The default CORS origin is `*` (allow all). After deploying the frontend, restrict it to the Amplify URL:
 
-**`Exactly 3 free variables required` error from `/api/render`**  
-The polynomial must have exactly 3 variables left unfixed. If your equation has 4 variables (x1–x4), fix exactly 1 of them in `fixedVars`.
+```properties
+quarkus.http.cors.origins=https://main.<appid>.amplifyapp.com
+```
 
-**Blank canvas in the browser**  
-Open the browser DevTools Network tab and inspect the `/api/render` response. A `400 Bad Request` usually means a variable count mismatch. A `500` means a parser error — check the equation string for typos (variable names must be `x1`, `x2`, … and the equation must start with `Y=`).
-
-**Cold start latency on Lambda**  
-The JVM image has a cold start of ~1–2 seconds at 512 MB. Subsequent invocations within the warm window respond in under 200ms. To eliminate cold starts in production, add a `ProvisionedConcurrencyConfig` entry to the function in `template.yaml`.
+Then redeploy the backend with `./deploy/deploy.sh`.

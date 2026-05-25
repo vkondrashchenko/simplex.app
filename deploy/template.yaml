@@ -3,6 +3,10 @@ Transform: AWS::Serverless-2016-10-31
 Description: SYMPLEX — Simplex-lattice diagram renderer (Quarkus + Lambda)
 
 Globals:
+  HttpApi:
+    DefaultRouteSettings:
+      ThrottlingRateLimit: 10
+      ThrottlingBurstLimit: 20
   Function:
     Timeout: 30
     MemorySize: 512
@@ -27,6 +31,7 @@ Resources:
       Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/symplex-lambda-role"
       Architectures:
         - arm64
+      ReservedConcurrentExecutions: 2
       Events:
         ApiProxy:
           Type: HttpApi
