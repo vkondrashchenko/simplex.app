@@ -24,8 +24,9 @@ Resources:
       PackageType: Image
       # ImageUri is used for `sam deploy` only; ignored by `sam local` after `sam build`.
       ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/symplex:latest"
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/symplex-lambda-role"
       Architectures:
-        - x86_64
+        - arm64
       Events:
         ApiProxy:
           Type: HttpApi
