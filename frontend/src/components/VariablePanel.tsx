@@ -28,11 +28,12 @@ export default function VariablePanel({ variables, onChange }: Props) {
         <span style={{
           fontSize: 10,
           fontFamily: 'var(--mono)',
-          color: valid ? 'var(--accent)' : 'var(--error)',
+          fontWeight: 600,
+          color: valid ? 'var(--text)' : 'var(--error)',
           background: valid ? 'var(--accent-dim)' : 'var(--error-dim)',
-          border: `1px solid ${valid ? 'rgba(34,211,238,0.2)' : 'rgba(248,113,113,0.2)'}`,
-          borderRadius: 3,
-          padding: '2px 6px',
+          border: `1px solid ${valid ? 'var(--accent)' : 'rgba(220,38,38,0.25)'}`,
+          borderRadius: 20,
+          padding: '2px 8px',
           letterSpacing: '0.04em',
         }}>
           {freeCount} free

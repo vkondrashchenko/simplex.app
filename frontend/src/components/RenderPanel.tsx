@@ -68,7 +68,7 @@ export default function RenderPanel({ settings: s, onChange, onRender, loading, 
               border: `1px solid ${s.mode === m ? 'var(--accent)' : 'transparent'}`,
               cursor: 'pointer',
               margin: 0,
-              color: s.mode === m ? 'var(--accent)' : 'var(--text-muted)',
+              color: s.mode === m ? 'var(--text)' : 'var(--text-muted)',
               fontSize: 12,
               transition: 'all 0.12s',
             }}>
@@ -109,7 +109,7 @@ export default function RenderPanel({ settings: s, onChange, onRender, loading, 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
             <label style={{ marginBottom: 0 }}>Precision</label>
-            <span className="mono" style={{ fontSize: 12, color: 'var(--accent)' }}>
+            <span className="mono" style={{ fontSize: 12, color: 'var(--text)', fontWeight: 600 }}>
               {s.precision.toFixed(1)}
             </span>
           </div>
@@ -130,7 +130,7 @@ export default function RenderPanel({ settings: s, onChange, onRender, loading, 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <label style={{ marginBottom: 0 }}>Resolution</label>
-          <span className="mono" style={{ fontSize: 12, color: s.pixelStep === 1 ? 'var(--accent)' : 'var(--warn)' }}>
+          <span className="mono" style={{ fontSize: 12, color: 'var(--text)', fontWeight: 600 }}>
             {s.pixelStep === 1 ? 'full' : `1/${s.pixelStep}`}
           </span>
         </div>

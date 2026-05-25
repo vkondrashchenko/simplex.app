@@ -1,24 +1,24 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg:           #07111f;
-  --surface:      #0b1929;
-  --surface-2:    #0f2038;
-  --surface-3:    #142845;
-  --border:       #1a3050;
-  --border-mid:   #254468;
-  --accent:       #22d3ee;
-  --accent-dim:   rgba(34, 211, 238, 0.10);
-  --accent-glow:  rgba(34, 211, 238, 0.22);
-  --text:         #c8dff2;
-  --text-bright:  #e8f4ff;
-  --text-muted:   #4e7090;
-  --text-dim:     #25405a;
-  --error:        #f87171;
-  --error-dim:    rgba(248, 113, 113, 0.10);
-  --warn:         #fbbf24;
+  --bg:           #EDEDEA;
+  --surface:      #FFFFFF;
+  --surface-2:    #F5F5F1;
+  --surface-3:    #EBEBE6;
+  --border:       #E3E3DC;
+  --border-mid:   #CBCBC2;
+  --accent:       #C8EC44;
+  --accent-dim:   rgba(200, 236, 68, 0.20);
+  --accent-glow:  rgba(200, 236, 68, 0.40);
+  --text:         #111111;
+  --text-bright:  #060606;
+  --text-muted:   #767676;
+  --text-dim:     #B4B4AE;
+  --error:        #DC2626;
+  --error-dim:    rgba(220, 38, 38, 0.08);
+  --warn:         #CA8A04;
   --mono:         'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
-  --ui:           'Inter', 'Segoe UI', system-ui, sans-serif;
+  --ui:           'Plus Jakarta Sans', 'Inter', 'Segoe UI', system-ui, sans-serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -40,10 +40,23 @@ body {
 .section-label {
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.10em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--text-muted);
   margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.section-label::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
 }
 
 /* ── Divider ────────────────────────────────────────── */
@@ -57,43 +70,49 @@ body {
 button {
   cursor: pointer;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   padding: 6px 13px;
   font-family: var(--ui);
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.02em;
-  transition: background 0.12s, box-shadow 0.12s, opacity 0.12s;
+  letter-spacing: 0.01em;
+  transition: background 0.15s, box-shadow 0.15s, opacity 0.15s, transform 0.1s;
   white-space: nowrap;
 }
 
-button:disabled { opacity: 0.4; cursor: not-allowed; }
+button:disabled { opacity: 0.35; cursor: not-allowed; }
 
 .btn-primary {
-  background: var(--accent);
-  color: var(--bg);
+  background: #111111;
+  color: #ffffff;
 }
 .btn-primary:not(:disabled):hover {
-  box-shadow: 0 0 14px var(--accent-glow);
+  background: #2a2a2a;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.20);
+}
+.btn-primary:not(:disabled):active {
+  transform: scale(0.98);
 }
 
 .btn-secondary {
-  background: transparent;
-  border: 1px solid var(--border-mid);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   color: var(--text-muted);
 }
 .btn-secondary:not(:disabled):hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--border-mid);
+  color: var(--text);
+  background: var(--surface-3);
 }
 
 .btn-danger {
-  background: transparent;
-  border: 1px solid #7f2020;
-  color: #f87171;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
 }
 .btn-danger:not(:disabled):hover {
   border-color: var(--error);
+  color: var(--error);
   background: var(--error-dim);
 }
 
@@ -106,23 +125,30 @@ select {
   font-size: 12px;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 6px;
   color: var(--text);
   padding: 5px 8px;
   outline: none;
-  transition: border-color 0.12s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
+
+input[type="text"]::placeholder,
+textarea::placeholder { color: var(--text-dim); }
 
 input[type="text"]:focus,
 input[type="number"]:focus,
 textarea:focus,
-select:focus { border-color: var(--accent); }
+select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
 
-input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; }
+input[type="checkbox"] { accent-color: #111111; cursor: pointer; }
 
 label {
   font-size: 11px;
   color: var(--text-muted);
+  font-weight: 500;
   display: block;
   margin-bottom: 3px;
 }
@@ -133,7 +159,7 @@ input[type="range"] {
   appearance: none;
   width: 100%;
   height: 3px;
-  background: var(--border);
+  background: var(--border-mid);
   border-radius: 2px;
   outline: none;
   border: none;
@@ -146,24 +172,25 @@ input[type="range"]::-webkit-slider-thumb {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--accent);
+  background: #111111;
   cursor: pointer;
-  box-shadow: 0 0 0 3px var(--accent-dim), 0 0 10px var(--accent-glow);
-  transition: box-shadow 0.15s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
+  transition: box-shadow 0.15s, transform 0.15s;
 }
 
 input[type="range"]:hover::-webkit-slider-thumb {
-  box-shadow: 0 0 0 5px var(--accent-dim), 0 0 14px var(--accent-glow);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+  transform: scale(1.15);
 }
 
 input[type="range"]::-moz-range-thumb {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--accent);
+  background: #111111;
   border: none;
   cursor: pointer;
-  box-shadow: 0 0 0 3px var(--accent-dim);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
 }
 
 /* ── Mono values (numbers, equations) ──────────────── */
@@ -174,7 +201,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* ── Radio buttons ──────────────────────────────────── */
-input[type="radio"] { accent-color: var(--accent); cursor: pointer; }
+input[type="radio"] { accent-color: #111111; cursor: pointer; }
 
 /* ── Select list ────────────────────────────────────── */
-select option { background: var(--surface-2); }
+select option { background: var(--surface); color: var(--text); }

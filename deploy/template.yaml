@@ -2,6 +2,14 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: SYMPLEX — Simplex-lattice diagram renderer (Quarkus + Lambda)
 
+Parameters:
+  CorsOrigins:
+    Type: String
+    Default: "*"
+    Description: >
+      Allowed CORS origins for the API. Set to your Amplify URL in production,
+      e.g. https://main.<app-id>.amplifyapp.com
+
 Globals:
   HttpApi:
     DefaultRouteSettings:
@@ -13,6 +21,7 @@ Globals:
     Environment:
       Variables:
         JAVA_TOOL_OPTIONS: "-Dfile.encoding=UTF-8"
+        CORS_ORIGINS: !Ref CorsOrigins
 
 Resources:
   SimplexFunction:

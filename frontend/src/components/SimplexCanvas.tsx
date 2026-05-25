@@ -51,11 +51,12 @@ export default function SimplexCanvas({ svgContent, min, max, error, loading }: 
           <div style={{
             position: 'absolute', inset: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(7,17,31,0.7)',
-            borderRadius: 6,
+            background: 'rgba(237, 237, 234, 0.82)',
+            backdropFilter: 'blur(2px)',
+            borderRadius: 8,
             zIndex: 2,
           }}>
-            <span style={{ color: 'var(--accent)', fontSize: 12, letterSpacing: '0.08em' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: 12, letterSpacing: '0.08em', fontWeight: 600 }}>
               COMPUTING…
             </span>
           </div>
@@ -69,9 +70,10 @@ export default function SimplexCanvas({ svgContent, min, max, error, loading }: 
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              border: '1px solid var(--border-mid)',
-              borderRadius: 4,
-              boxShadow: '0 0 32px rgba(0,0,0,0.5)',
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 12,
+              boxShadow: '0 4px 24px rgba(0,0,0,0.07)',
               overflow: 'hidden',
             }}
             dangerouslySetInnerHTML={{ __html: svgContent }}
@@ -83,19 +85,20 @@ export default function SimplexCanvas({ svgContent, min, max, error, loading }: 
               aspectRatio: '1 / 1',
               maxWidth: '100%',
               maxHeight: '100%',
-              border: '1px dashed var(--border)',
-              borderRadius: 6,
+              background: 'var(--surface)',
+              border: '1px dashed var(--border-mid)',
+              borderRadius: 12,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 8,
+              gap: 10,
               color: 'var(--text-dim)',
             }}>
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1">
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.2">
                 <polygon points="16,4 1,28 31,28" />
               </svg>
-              <span style={{ fontSize: 11, letterSpacing: '0.08em' }}>DIAGRAM WILL APPEAR HERE</span>
+              <span style={{ fontSize: 11, letterSpacing: '0.08em', fontWeight: 600 }}>DIAGRAM WILL APPEAR HERE</span>
             </div>
           )
         )}

@@ -18,6 +18,11 @@ if [[ -z "${IMAGE_REPOSITORY:-}" ]]; then
   exit 1
 fi
 
+if [[ -z "${CORS_ORIGINS:-}" ]]; then
+  echo "Error: CORS_ORIGINS is not set in $ENV_FILE."
+  exit 1
+fi
+
 cd "$SCRIPT_DIR"
 
 echo "Building image..."
@@ -26,4 +31,6 @@ echo "Building image..."
 DOCKER_BUILDKIT=0 sam build
 
 echo "Deploying to AWS (image_repository: $IMAGE_REPOSITORY)..."
-sam deploy --image-repository "$IMAGE_REPOSITORY" "$@"
+sam deploy --image-repository "$IMAGE_REPOSITORY" \
+  --parameter-overrides "CorsOrigins=$CORS_ORIGINS" \
+  "$@"

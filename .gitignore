@@ -69,6 +69,7 @@ ehthumbs.db
 # Local development
 .vscode-test/
 .devcontainer/
+*.local.json
 
 # SAM / CloudFormation
 .aws-sam/

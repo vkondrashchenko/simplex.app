@@ -68,6 +68,7 @@ export default function App() {
         overflowY: 'auto',
         background: 'var(--surface)',
         borderRight: '1px solid var(--border)',
+        boxShadow: '2px 0 12px rgba(0,0,0,0.06)',
         display: 'flex',
         flexDirection: 'column',
         gap: 0,
@@ -82,14 +83,14 @@ export default function App() {
         }}>
           <span style={{
             fontFamily: 'var(--mono)',
-            fontWeight: 500,
+            fontWeight: 700,
             fontSize: 15,
             letterSpacing: '0.15em',
-            color: 'var(--accent)',
+            color: 'var(--text)',
           }}>
             SYMPLEX
           </span>
-          <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>
+          <span style={{ fontSize: 10, color: 'var(--text-dim)', letterSpacing: '0.06em', fontWeight: 500 }}>
             DIAGRAM BUILDER
           </span>
         </div>
