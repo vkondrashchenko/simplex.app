@@ -40,7 +40,6 @@ Resources:
       Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/symplex-lambda-role"
       Architectures:
         - arm64
-      ReservedConcurrentExecutions: 2
       Events:
         ApiProxy:
           Type: HttpApi
